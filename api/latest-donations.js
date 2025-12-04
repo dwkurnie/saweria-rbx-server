@@ -7,6 +7,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Ambil 1 donasi terbaru yang isNew == true
     const snapshot = await db
       .collection('donations')
       .where('isNew', '==', true)
@@ -24,21 +25,29 @@ export default async function handler(req, res) {
     const response = {
       has_new: true,
       id: doc.id,
+      type: data.type || 'donation',
+
       name: data.name,
       amount: data.amount,
       message: data.message,
-      type: data.type || 'normal',
-      media: data.media,
-      sound: data.sound,
-      tts: data.tts,
+
+      amount_raw: data.amount_raw ?? null,
+      fee_cut: data.fee_cut ?? null,
+      email: data.email ?? null,
+      is_user: data.is_user ?? null,
+
+      created_at_saweria: data.created_at_saweria || null,
       time: data.createdAt ? data.createdAt.toDate().toISOString() : null,
     };
 
+    // tandai sudah tidak baru supaya tidak dikirim lagi
     await doc.ref.update({ isNew: false });
 
     return res.status(200).json(response);
   } catch (err) {
     console.error('Error in latest-donation:', err);
-    return res.status(500).json({ has_new: false, error: 'Internal server error' });
+    return res
+      .status(500)
+      .json({ has_new: false, error: 'Internal server error' });
   }
 }
