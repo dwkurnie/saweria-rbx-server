@@ -9,39 +9,46 @@ export default async function handler(req, res) {
   try {
     const body = req.body;
 
-    // Payload Saweria:
-    // [
-    //   {
-    //     amount: "69420",
-    //     donator: "Someguy",
-    //     media: { ... },
-    //     message: "THIS IS A FAKE MESSAGE! HAVE A GOOD ONE",
-    //     sound: { ... },
-    //     tts: "..."
-    //   }
-    // ]
+    // body: array of donations
+    // contoh:
+    // [ { amount, donator, media, message, sound, tts, type? }, ... ]
 
     if (!Array.isArray(body) || body.length === 0) {
       return res.status(400).json({ error: 'Empty donation payload' });
     }
 
-    const d = body[0];
+    const d = body[0]; // ambil elemen pertama dulu
+
+    // Tentukan type:
+    // - kalau ada d.type → pakai itu
+    // - kalau tidak ada:
+    //    - kalau media.type === "yt" → "media"
+    //    - kalau ada media.src array → "normal"
+    //    - fallback → "normal"
+    let donationType = 'normal';
+    if (d.type === 'normal' || d.type === 'media') {
+      donationType = d.type;
+    } else if (d.media && d.media.type === 'yt') {
+      donationType = 'media';
+    } else if (d.media && Array.isArray(d.media.src)) {
+      donationType = 'normal';
+    }
 
     const donation = {
       name: d.donator || 'Anonymous',
       amount: Number(d.amount || 0),
       message: d.message || '',
+      type: donationType,
       media: d.media || null,
       sound: d.sound || null,
       tts: d.tts || '',
       createdAt: new Date(),
-      isNew: true, // flag bahwa donasi ini belum dikirim ke Roblox
+      isNew: true,
     };
 
-    // Simpan ke koleksi "donations"
     const docRef = await db.collection('donations').add(donation);
 
-    console.log('New donation saved with ID:', docRef.id);
+    console.log('New donation saved with ID:', docRef.id, 'data:', donation);
 
     return res.status(200).json({ success: true, id: docRef.id });
   } catch (err) {

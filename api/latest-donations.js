@@ -7,7 +7,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Query 1 donasi terbaru yang isNew == true
     const snapshot = await db
       .collection('donations')
       .where('isNew', '==', true)
@@ -22,20 +21,19 @@ export default async function handler(req, res) {
     const doc = snapshot.docs[0];
     const data = doc.data();
 
-    // Siapkan response untuk Roblox
     const response = {
       has_new: true,
       id: doc.id,
       name: data.name,
       amount: data.amount,
       message: data.message,
+      type: data.type || 'normal',
       media: data.media,
       sound: data.sound,
       tts: data.tts,
       time: data.createdAt ? data.createdAt.toDate().toISOString() : null,
     };
 
-    // Update isNew -> false supaya tidak dikirim lagi
     await doc.ref.update({ isNew: false });
 
     return res.status(200).json(response);
